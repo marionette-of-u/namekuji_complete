@@ -9,7 +9,7 @@ clang\_complete の設定が難しすぎるので自分で簡易的な補完ス�
 namekuji_complete.cpp をコンパイル, 実行できる環境 (C++11) と clang, neocomplcache (https://github.com/Shougo/neocomplcache) に依存.
 
 Installation
-============
+-----------
 
 * cpp/namekuji_complete.cpp をコンパイルし, 実行可能なファイルを生成する.
 * clang を http://clang.llvm.org/ からビルドし, 実行可能なファイルを生成する.
@@ -17,7 +17,7 @@ Installation
 * `.vimrc` に後述する Setting examples に倣った設定を記述.
 
 Setting examples
-============
+-----------
 
 ```vim
 "---------------------------------------------------------------------------
