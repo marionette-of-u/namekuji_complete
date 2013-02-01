@@ -11,7 +11,7 @@ namekuji_complete.cpp をコンパイル, 実行できる環境 (C++11) と clan
 Installation
 ============
 
-* bin/namekuji_complete.cpp をコンパイルし, 実行可能なファイルを生成する.
+* cpp/namekuji_complete.cpp をコンパイルし, 実行可能なファイルを生成する.
 * clang を http://clang.llvm.org/ からビルドし, 実行可能なファイルを生成する.
 * neocomplcache を使えるようにする.
 * `.vimrc` に後述する Setting examples に倣った設定を記述.
