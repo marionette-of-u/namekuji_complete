@@ -35,7 +35,7 @@ Setting examples
 " namekuji_complete の実行形式ファイル
 let g:namekuji_complete_binary = 'C:/namekuji_complete/namekuji_complete.exe'
 " その他オプション
-let g:namekuji_complete_opts = '-cc1 -std=c++11 -IC:/MinGW/msys/1.0/local/include -IC:/MinGW/lib/gcc/mingw32/4.7.2/include -IC:/MinGW/lib/gcc/mingw32/4.7.2/include/c++ -IC:/MinGW/lib/gcc/mingw32/4.7.2/include/c++/mingw32'
+let g:namekuji_complete_opts = '-cc1 -std=c++11 -code-completion-macros -code-completion-patterns -IC:/MinGW/msys/1.0/local/include -IC:/MinGW/lib/gcc/mingw32/4.7.2/include -IC:/MinGW/lib/gcc/mingw32/4.7.2/include/c++ -IC:/MinGW/lib/gcc/mingw32/4.7.2/include/c++/mingw32'
 
 "---------------------------------------------------------------------------
 " neocomplcache
