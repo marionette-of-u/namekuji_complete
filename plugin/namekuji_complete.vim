@@ -1,9 +1,9 @@
 au FileType cpp,cc,cxx,h,hpp,hxx call <SID>NamekujiCompleteInit()
 
-autocmd FileType cpp,cc,cxx,h,hpp,hxx setlocal completefunc=NamekujiComplete
+" autocmd FileType cpp,cc,cxx,h,hpp,hxx setlocal completefunc=NamekujiComplete
 autocmd FileType cpp,cc,cxx,h,hpp,hxx setlocal omnifunc=NamekujiComplete
 
-let b:namekuji_complete_list = []
+let s:namekuji_complete_list = []
 
 function! s:NamekujiCompleteInit()
   if !exists('g:namekuji_complete_binary')
@@ -17,6 +17,13 @@ endfunction
 
 function! NamekujiComplete(findstart, base)
   if a:findstart
+    let line = getline('.')
+    let start = col('.') - 1
+    while start > 0 && line[start - 1] =~ '\a'
+      let start -= 1
+    endwhile
+    return start
+  else
     let l:buffer = getline(1, '$')
     let l:tempfile = expand('%:p:h') . '/' . localtime() . expand('%:t')
     try
@@ -40,13 +47,11 @@ function! NamekujiComplete(findstart, base)
       let l:i = 1
       while l:i < l:dp
         let l:menu = l:elementf[i]
-        call add(b:namekuji_complete_list, { 'word': l:word, 'menu': l:menu, 'dup': 1, 'kind': '' })
+        call add(s:namekuji_complete_list, { 'word': l:word, 'menu': l:menu, 'dup': 1, 'kind': '' })
         let l:i += 1
       endwhile
     endfor
-    return col('.') - 1
-  else
-    return b:namekuji_complete_list
+    return s:namekuji_complete_list
   endif
 endfunction
 

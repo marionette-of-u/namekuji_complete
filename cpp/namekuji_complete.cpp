@@ -64,17 +64,31 @@ std::pair<std::string, std::string> make_completion_result(CXCompletionResult *c
 }
 
 int main(int argc, char *argv[]){
+    //char *argv[] = {
+    //    "dummy",
+    //    "C:/clang/main.cpp",
+    //    "l", "c",
+    //    "-cc1",
+    //    "-std=c++11",
+    //    "-code-completion-macros",
+    //    "-code-completion-patterns",
+    //    "-IC:/MinGW/msys/1.0/local/include",
+    //    "-IC:/MinGW/lib/gcc/mingw32/4.7.2/include",
+    //    "-IC:/MinGW/lib/gcc/mingw32/4.7.2/include/c++",
+    //    "-IC:/MinGW/lib/gcc/mingw32/4.7.2/include/c++/mingw32"
+    //};
+    //const int argc = sizeof(argv) / sizeof(*argv);
 
     if(argc < 4){ return 0; }
     CXIndex idx = clang_createIndex(0, 0);
     if(!idx){ return 0; }
 
-    CXTranslationUnit u = clang_parseTranslationUnit(idx, argv[1], argv + 4, argc - 4, 0, 0, CXTranslationUnit_DetailedPreprocessingRecord);
+    CXTranslationUnit u = clang_parseTranslationUnit(idx, argv[1], argv + 4, argc - 4, 0, 0, (CXTranslationUnit_IncludeBriefCommentsInCodeCompletion << 1) - 1);
     if(!u){ return 0; }
-    clang_reparseTranslationUnit(u, 0, 0, clang_defaultReparseOptions(u));
+    clang_reparseTranslationUnit(u, 0, 0, CXReparse_None);
 
     int line = strtol(argv[2], 0, 10), column = strtol(argv[3], 0, 10);
-    CXCodeCompleteResults *res = clang_codeCompleteAt(u, argv[1], line, column, nullptr, 0, clang_defaultCodeCompleteOptions());
+    CXCodeCompleteResults *res = clang_codeCompleteAt(u, argv[1], line, column, nullptr, 0, (CXCodeComplete_IncludeCodePatterns << 1) - 1);
     if(!res){ return 0; }
 
     map_type map;
