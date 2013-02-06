@@ -4,22 +4,23 @@
 Todo & etc...
 -----------
 
-* 重い
-* 非同期処理
-* 補完対象の情報をパース
+* 不安定なので非同期処理で安定させる. vimproc が無難？
+* windowsのvim以外で動作確認.
+* 補完はオプション次第では C++11 でも動くかも？まだ確認してない.
 
 Description
 -----------
 
-C++11 限定.   
 clang\_complete の設定が難しすぎるので自分で簡易的な補完スクリプトを書いてみた.   
 namekuji_complete.cpp をコンパイル, 実行できる環境 (C++11) と clang, neocomplcache (https://github.com/Shougo/neocomplcache) に依存.
 
 Installation
 -----------
 
-* cpp/namekuji_complete.cpp をコンパイルし, 実行可能なファイルを生成する.
-* clang を http://clang.llvm.org/ からビルドし, 実行可能なファイルを生成する.
+* libclang(.so|.dll) を http://clang.llvm.org/ からビルド, 生成する.
+* llvm/tools/clang/include/ 及び llvm/include をコンパイラがインクルードディレクトリとして認識できるように適切な設定を行う.
+* cpp/namekuji_complete.cpp をコンパイルし, 実行可能なファイルを生成する. libclang をリンクするのを忘れずに！
+* libclang(.so|.dll) を namekuji_complete が認識できる様に適切な場所に配置する.
 * neocomplcache を使えるようにする.
 * `.vimrc` に後述する Setting examples に倣った設定を記述.
 
@@ -32,14 +33,14 @@ Setting examples
 
 " namekuji_complete の実行形式ファイル
 let g:namekuji_complete_binary = 'C:/namekuji_complete/namekuji_complete.exe'
-" clang の実行形式ファイル
-let g:namekuji_complete_clang_binary = 'C:/clang/clang.exe'
 " その他オプション
-let g:namekuji_complete_opts = '-IC:/MinGW/msys/1.0/local/include -IC:/MinGW/lib/gcc/mingw32/4.7.2/include -IC:/MinGW/lib/gcc/mingw32/4.7.2/include/c++ -IC:/MinGW/lib/gcc/mingw32/4.7.2/include/c++/mingw32'
+let g:namekuji_complete_opts = '-cc1 -std=c++11 -IC:/MinGW/msys/1.0/local/include -IC:/MinGW/lib/gcc/mingw32/4.7.2/include -IC:/MinGW/lib/gcc/mingw32/4.7.2/include/c++ -IC:/MinGW/lib/gcc/mingw32/4.7.2/include/c++/mingw32'
 
 "---------------------------------------------------------------------------
 " neocomplcache
-" 自動で起動できるようにしておく
+" 例
+" 状況に合わせて良しなに
+
 let g:neocomplcache_enable_at_startup = 1
 
 " 必須

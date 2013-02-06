@@ -10,10 +10,6 @@ function! s:NamekujiCompleteInit()
     let g:namekuji_complete_binary = 'namekuji_complete'
   endif
 
-  if !exists('g:namekuji_complete_clang_binary')
-    let g:namekuji_complete_clang_binary = 'clang'
-  endif
-
   if !exists('g:namekuji_complete_opts')
     let g:namekuji_complete_opts = ''
   endif
@@ -30,7 +26,7 @@ function! NamekujiComplete(findstart, base)
     endtry
     let l:li = line('.')
     let l:co = col('.')
-    let l:cm = g:namekuji_complete_binary.' '.g:namekuji_complete_clang_binary.' '.l:tempfile.' '.l:li.' '.l:co.' 1024 '.g:namekuji_complete_opts
+    let l:cm = g:namekuji_complete_binary.' '.l:tempfile.' '.l:li.' '.l:co.' '.g:namekuji_complete_opts
     let l:clang_output = split(system(l:cm), "\n")
     call delete(l:tempfile)
     if len(l:clang_output) == 0
@@ -38,12 +34,15 @@ function! NamekujiComplete(findstart, base)
     endif
     let b:namekuji_complete_list = []
     for l:element in l:clang_output
-      if strlen(l:element) > 10 && l:element[0:9] ==? '<namekuji>'
-        let l:elementf = split(l:element[10:], '#')
-        let l:word = l:elementf[0]
-        let l:menu = l:elementf[1]
-        call add(b:namekuji_complete_list, { 'word': l:word, 'menu': l:menu, 'dup': 1 })
-      endif
+      let l:elementf = split(l:element, '#')
+      let l:word = l:elementf[0]
+      let l:dp = len(l:elementf)
+      let l:i = 1
+      while l:i < l:dp
+        let l:menu = l:elementf[i]
+        call add(b:namekuji_complete_list, { 'word': l:word, 'menu': l:menu, 'dup': 1, 'kind': '' })
+        let l:i += 1
+      endwhile
     endfor
     return col('.') - 1
   else

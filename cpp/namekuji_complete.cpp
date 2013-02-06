@@ -1,110 +1,96 @@
-#include <memory>
-#include <vector>
-#include <utility>
-#include <string>
 #include <iostream>
-#include <fstream>
-#include <cstdio>
+#include <vector>
+#include <string>
+#include <map>
+#include <set>
+#include <utility>
+#include <functional>
 #include <cstdlib>
-#include <cstring>
 #include <cctype>
+#include "clang-c/Index.h"
 
-int main(int argc, char *argv[]){
-    const int argm = 6;
-
-    if(argc < argm){ return 0; }
-    const std::string
-        clang_path  = argv[1],
-        target_path = argv[2],
-        str_line    = argv[3],
-        str_col     = argv[4];
-    int clang_output_line_length = std::atoi(argv[5]);
-
-    if(clang_output_line_length < 0x1000){ clang_output_line_length = 0x1000; }
-    std::unique_ptr<char[]> buffer(new char[clang_output_line_length]);
-
-    std::string other_options;
-    for(int i = argm; i < argc; ++i){
-        other_options += " ";
-        other_options += argv[i];
-    }
-
-#ifdef _MSC_VER
-    const char *drop = "2> nul";
-#else
-    const char *drop = "2> /dev/null";
-#endif
-
-    std::string command = clang_path + " -cc1 -std=c++11  -fsyntax-only -code-completion-at=" + target_path + ":" + str_line + ":" + str_col + " " + target_path + " " + other_options + " " + drop;
-
-    auto pipe_deleter = [](std::FILE *pipe){ _pclose(pipe); };
-    std::unique_ptr<std::remove_pointer<std::FILE*>::type, decltype(pipe_deleter)> pipe(_popen(command.c_str(), "r"));
-    if(!&*pipe){ return 0; }
-
-    std::string log_line;
-    while(!std::feof(&*pipe)){
-        if(std::fgets(&buffer[0], clang_output_line_length, &*pipe)){
-            log_line = &buffer[0];
+std::string rep(std::string str, const std::string &p, const std::string &q, const int alnum){
+    std::size_t off = 0;
+    for(; ; ){
+        std::size_t i = str.find(p, off);
+        if(i == str.npos){ break; }
+        if(alnum){
+            if((i > 0 && !std::isalnum(str[i - 1])) || (i + p.size() < str.size() - 1 && !std::isalnum(str[i + p.size()]))){
+                str.replace(i, p.size(), q);
+            }
         }else{
+            str.replace(i, p.size(), q);
+        }
+        off = i + q.size();
+    }
+    return str;
+}
+
+typedef std::map<std::string, std::set<std::string>> map_type;
+
+std::string make_completion_string(CXCompletionString completion_string, std::string &strxx){
+    std::string key;
+    for(std::size_t i = 0, n = clang_getNumCompletionChunks(completion_string); i < n; ++i){
+        const CXCompletionChunkKind kind = clang_getCompletionChunkKind(completion_string, i);
+
+        if(kind == CXCompletionChunk_Optional){
+            make_completion_string(clang_getCompletionChunkCompletionString(completion_string, i), strxx);
+            strxx += " = def";
             continue;
         }
 
-        std::size_t i = log_line.find(" : ");
-        if(i == log_line.npos){ continue; }
-        if(log_line.find("COMPLETION: ") == 0){
-            log_line = log_line.substr(12, log_line.size() - 12);
-            i -= 12;
-        }else{ continue; }
+        if(kind == CXCompletionChunk_VerticalSpace){
+            continue;
+        }
 
-        auto del = [](std::string &str, const std::string &target, const int space){
-            std::size_t off = 0;
-            for(; ; ){
-                std::size_t i = str.find(target, off);
-                if(i == str.npos){ break; }
-                str.erase(str.begin() + i, str.begin() + i + target.size());
-                if(space && str[i - 1] != '*' && str[i - 1] != '&'){
-                    str.insert(i, " ");
-                    ++i;
-                }
-                off = i;
-            }
-            return std::ref(str);
-        };
+        CXString text = clang_getCompletionChunkText(completion_string, i);
+        const char *cstr = clang_getCString(text);
+        if(cstr){ strxx += cstr; }
+        if(kind == CXCompletionChunk_ResultType && !strxx.empty() && strxx.back() != '*' && strxx.back() != '&'){
+            strxx += " ";
+        }
+        if(kind == CXCompletionChunk_TypedText && key.empty()){
+            key = cstr;
+        }
+        clang_disposeString(text);
+    }
+    return key;
+}
 
-        auto rep = [](std::string &str, const std::string &p, const std::string &q, const int alnum){
-            std::size_t off = 0;
-            for(; ; ){
-                std::size_t i = str.find(p, off);
-                if(i == str.npos){ break; }
-                if(alnum){
-                    if((i > 0 && !std::isalnum(str[i - 1])) || (i < str.size() - 1 && !std::isalnum(str[i + 1]))){
-                        str.replace(i, p.size(), q);
-                    }
-                }else{
-                    str.replace(i, p.size(), q);
-                }
-                off = i + q.size();
-            }
-            return std::ref(str);
-        };
+std::pair<std::string, std::string> make_completion_result(CXCompletionResult *completion_result){
+    std::string info;
+    std::string word = make_completion_string(completion_result->CompletionString, info);
+    return std::make_pair(word, info);
+}
 
-        auto def = [](std::string &str){
-            std::size_t off = 0;
-            for(; ; ){
-                std::size_t i = str.find("{#", off);
-                if(i == str.npos){ break; }
-                str.insert(str.find("#>", i), " = def");
-                off = i + 2;
-            }
-            return std::ref(str);
-        };
+int main(int argc, char *argv[]){
 
-        std::string word = log_line.substr(0, i);
-        if(word[0] == '_'){ continue; }
-        std::string menu = log_line.substr(i + 3, log_line.size() - i - 3);
-        del(del(del(del(del(del(def(rep(menu, "typename", "class", 1)), "[#", 0), "#]", 1), "<#", 0), "#>", 0), "{#", 0), "#}", 0);
-        std::cout << "<namekuji>" << word << "#" << menu;
+    if(argc < 4){ return 0; }
+    CXIndex idx = clang_createIndex(0, 0);
+    if(!idx){ return 0; }
+
+    CXTranslationUnit u = clang_parseTranslationUnit(idx, argv[1], argv + 4, argc - 4, 0, 0, CXTranslationUnit_DetailedPreprocessingRecord);
+    if(!u){ return 0; }
+    clang_reparseTranslationUnit(u, 0, 0, clang_defaultReparseOptions(u));
+
+    int line = strtol(argv[2], 0, 10), column = strtol(argv[3], 0, 10);
+    CXCodeCompleteResults *res = clang_codeCompleteAt(u, argv[1], line, column, nullptr, 0, clang_defaultCodeCompleteOptions());
+    if(!res){ return 0; }
+
+    map_type map;
+    for(std::size_t i = 0, i_ = res->NumResults; i < i_; ++i){
+        map_type::mapped_type set;
+        auto r = make_completion_result(res->Results + i);
+        map[r.first].insert(r.second);
     }
 
+    for(auto iter = map.begin(), end = map.end(); iter != end; ++iter){
+        std::cout << iter->first;
+        for(auto set_iter = iter->second.begin(), set_end = iter->second.end(); set_iter != set_end; ++set_iter){
+            std::cout << "#" << rep(*set_iter, "typename", "class", 1);
+        }
+        std::cout << "\n";
+    }
+ 
     return 0;
 }
